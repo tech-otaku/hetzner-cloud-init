@@ -1,0 +1,71 @@
+#cloud-config
+fqdn: site.example.com
+hostname: site.example.com
+locale: en_GB.UTF-8
+timezone: Europe/London
+#package_update: true    # Implied with `package_upgrade: true`
+#package_upgrade: true
+#package_reboot_if_required: true
+users:
+# Create new user `steve`
+  - name: steve
+    groups: sudo, www-data
+    lock_passwd: false
+    shell: /bin/bash
+    passwd: $6$UnXq642da9EfkQfH$WyjGklLI/RQy6/ss7/v5MAmrm0MKMnJaRLmx0FYCuLfBvcetHp6Rb.DL9djJ50C56293m2cA11E3PhnTRsa3B.
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIflZiUF+OWD4RmZpFRIYUOqfEewfNXql6PocZ49hVAl dummy-steve-20201104-084213-gmt
+write_files:
+  - path: /etc/ssh/sshd_config
+    content: |
+      Match Group sftp-only
+          ForceCommand internal-sftp
+          ChrootDirectory %h/www
+          PermitTunnel no
+          AllowAgentForwarding no
+          AllowTcpForwarding no
+          X11Forwarding no
+    append: true
+runcmd:
+  - sed -i 's/[# ]*set tabsize 8/set tabsize 4/g' /etc/nanorc
+# Configure SSH
+  - sed -i 's/[#]*Port 22/Port 5822/g' /etc/ssh/sshd_config
+  - sed -i 's/#HostKey \/etc\/ssh\/ssh_host_ed25519_key/HostKey \/etc\/ssh\/ssh_host_ed25519_key/g' /etc/ssh/sshd_config
+  - sed -i 's/[#]*PermitRootLogin yes/PermitRootLogin prohibit-password/g' /etc/ssh/sshd_config
+  #- sed -i '/prohibit-password/! s/[#]*PermitRootLogin yes/PermitRootLogin no/g' /etc/ssh/sshd_config
+  - sed -i 's/[#]*PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
+  - /etc/init.d/ssh restart
+# Configure Firewall
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw limit 5822/tcp
+  - ufw allow 10000/tcp    # For Webmin
+  - ufw enable
+# Add group sftp-only
+  - groupadd -g 9001 sftp-only
+# Configure .bashrc for `root`
+  - sed -i 's/($debian_chroot)}\\u\@\\h:\\/($debian_chroot)}\\u\@$(hostname -I | cut -d " " -f 1):\\/g' /root/.bashrc
+  - sed -i 's/($debian_chroot)}\\\[\\033\[01;32m\\\]\\u\@\\h/($debian_chroot)}\\\[\\033\[01;34m\\\]\\u\@$(hostname -I | cut -d " " -f 1)/g' /root/.bashrc
+# Configure .bashrc for `steve`
+  - sed -i -E 's/secure_path="(.*)"/secure_path="\1:\/home\/steve\/scripts"/g' /etc/sudoers
+  - sed -i 's/($debian_chroot)}\\u\@\\h:\\/($debian_chroot)}\\u\@$(hostname -I | cut -d " " -f 1):\\/g' /home/steve/.bashrc
+  - sed -i 's/($debian_chroot)}\\\[\\033\[01;32m\\\]\\u\@\\h/($debian_chroot)}\\\[\\033\[01;34m\\\]\\u\@$(hostname -I | cut -d " " -f 1)/g' /home/steve/.bashrc
+  - echo "alias update='sudo -- sh -c \"apt update; apt upgrade -y; apt dist-upgrade -y; apt autoremove -y; apt autoclean -y\"'" >> /home/steve/.bashrc
+  - echo "alias shutdown-r='sudo shutdown -r now'" >> /home/steve/.bashrc
+  - echo "export PATH=$PATH:/home/steve/scripts" >> /home/steve/.bashrc
+# Force password change for `steve` on initial login
+  - chage -d 0 steve
+# The new server's private/public host keys
+ssh_keys:
+  ed25519_private: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+    QyNTUxOQAAACC6LVtz4sqyvoPck2qZ7tG11Cg5CgPmS2fN5elPP26whwAAAKiAxjkUgMY5
+    FAAAAAtzc2gtZWQyNTUxOQAAACC6LVtz4sqyvoPck2qZ7tG11Cg5CgPmS2fN5elPP26whw
+    AAAEDtsQ500MICgguUByaIIhSk7o6EaI+DqvtfowIBAj+e/botW3PiyrK+g9yTapnu0bXU
+    KDkKA+ZLZ83l6U8/brCHAAAAIWR1bW15LWhvc3RrZXktMjAyMDExMDQtMDg0MjEzLWdtdA
+    ECAwQ=
+    -----END OPENSSH PRIVATE KEY-----
+  ed25519_public: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILotW3PiyrK+g9yTapnu0bXUKDkKA+ZLZ83l6U8/brCH dummy-hostkey-20201104-084213-gmt
