@@ -12,7 +12,9 @@ users:
     groups: sudo, www-data
     lock_passwd: false
     shell: /bin/bash
+# Non-production password for illustrative purposes only.
     passwd: $6$UnXq642da9EfkQfH$WyjGklLI/RQy6/ss7/v5MAmrm0MKMnJaRLmx0FYCuLfBvcetHp6Rb.DL9djJ50C56293m2cA11E3PhnTRsa3B.
+# Non-production keys for illustrative purposes only,
     ssh-authorized-keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIflZiUF+OWD4RmZpFRIYUOqfEewfNXql6PocZ49hVAl dummy-steve-20201104-084213-gmt
 write_files:
@@ -57,7 +59,7 @@ runcmd:
   - echo "export PATH=$PATH:/home/steve/scripts" >> /home/steve/.bashrc
 # Force password change for `steve` on initial login
   - chage -d 0 steve
-# The new server's private/public host keys
+# The new server's private/public host keys. Non-production keys for illustrative purposes only.
 ssh_keys:
   ed25519_private: |
     -----BEGIN OPENSSH PRIVATE KEY-----
