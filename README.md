@@ -48,12 +48,11 @@ BEWARE: Changes made to the configuration file may not immediately be reflected 
 <br />
 
 - The encrypted password (`passwd`) was created using `perl -e 'print crypt("password","\$6\$UnXq642da9EfkQfH\$")'` on a Ubuntu client.
-<br />
-<br />
+  
 _This is a non-production password for illustrative purposes only._
 <br />
 
 - The SSH keys were created using `yes "y" | ssh-keygen -o -a 100 -t ed25519 -f /path/to/user/keys -N "" -C this-is-a-comment`
-<br />
-<br />
+  
 _These are non-production keys for illustrative purposes only._
+
